@@ -36,7 +36,7 @@ static float micBack_output[FFT_SIZE];
 #define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
 #define PHASE_MIN		0.15 //minimum threshold for phase difference values
 #define PHASE_MAX		2 	//maximum threshold for phase difference values
-
+#define DIST_STOP   70  //distance between robot and obstacle in mm
 
 
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
@@ -89,53 +89,39 @@ void sound_position_detection(void){
 	if(freq_index_r >= FREQ_FORWARD_L && freq_index_r <= FREQ_FORWARD_H){
 		phase_diff_old = phase_diff;
 		phase_diff = phase_right-phase_left;
-//		if ((phase_back-phase_left) > 0){
-//			if (phase_diff > PHASE_MIN && phase_diff < PHASE_MAX ){
-//				left_motor_set_speed(-600);
-//				right_motor_set_speed(600);
-//			}
-//			else if (phase_diff < -PHASE_MIN && phase_diff > -PHASE_MAX){
-//				left_motor_set_speed(600);
-//				right_motor_set_speed(-600);
-//			}
-//			else{
-//						left_motor_set_speed(0);
-//						right_motor_set_speed(0);
-//			}
-//		}
-//		if ((phase_back-phase_left) < 0) {
-			if (phase_diff > PHASE_MIN && phase_diff < PHASE_MAX &&
-				phase_diff_old > PHASE_MIN && phase_diff_old < PHASE_MAX ){
 
+		if (phase_diff > PHASE_MIN && phase_diff < PHASE_MAX &&
+			phase_diff_old > PHASE_MIN && phase_diff_old < PHASE_MAX ){
+
+				left_motor_set_speed(600);
+				right_motor_set_speed(-600);
+
+		}
+		else if (phase_diff < -PHASE_MIN && phase_diff > -PHASE_MAX &&
+				 phase_diff_old < -PHASE_MIN && phase_diff_old > -PHASE_MAX){
+
+				left_motor_set_speed(-600);
+				right_motor_set_speed(600);
+
+		}
+		else if(phase_diff < PHASE_MIN && phase_diff > -PHASE_MIN &&
+				phase_diff_old < PHASE_MIN && phase_diff_old > -PHASE_MIN){
+
+			if ((phase_back-phase_left) > 0 && (phase_back-phase_left) <= (phase_back-phase_right) + 0.1 &&
+				(phase_back-phase_left) >= (phase_back-phase_right) - 0.1){
+
+				left_motor_set_speed(-600);
+				right_motor_set_speed(600);
+			}
+			else if (distance < DIST_STOP){
+				motors_stop();
+			}
+
+			else{
 					left_motor_set_speed(600);
-					right_motor_set_speed(-600);
-
-			}
-			else if (phase_diff < -PHASE_MIN && phase_diff > -PHASE_MAX &&
-					 phase_diff_old < -PHASE_MIN && phase_diff_old > -PHASE_MAX){
-
-					left_motor_set_speed(-600);
 					right_motor_set_speed(600);
-
 			}
-			else if(phase_diff < PHASE_MIN && phase_diff > -PHASE_MIN &&
-					phase_diff_old < PHASE_MIN && phase_diff_old > -PHASE_MIN){
-//				if ((phase_back-phase_left) < 0){
-//
-//				}
-				if (distance < 70){
-					motors_stop();
-				}
-//				else if(distance < 70){
-//					left_motor_set_speed(-400);
-//					right_motor_set_speed(-400);
-//				}
-				else{
-						left_motor_set_speed(600);
-						right_motor_set_speed(600);
-				}
-			}
-//		}
+		}
 	}
 	else{
 			left_motor_set_speed(0);
