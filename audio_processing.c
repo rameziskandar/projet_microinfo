@@ -34,6 +34,10 @@ static float micBack_output[FFT_SIZE];
 #define FREQ_RIGHT		23	//359HZ
 #define FREQ_BACKWARD	26	//406Hz
 #define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
+#define PHASE_MIN		0.15 //minimum threshold for phase difference values
+#define PHASE_MAX		2 	//maximum threshold for phase difference values
+
+
 
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
@@ -43,6 +47,7 @@ static float micBack_output[FFT_SIZE];
 #define FREQ_RIGHT_H		(FREQ_RIGHT+1)
 #define FREQ_BACKWARD_L		(FREQ_BACKWARD-1)
 #define FREQ_BACKWARD_H		(FREQ_BACKWARD+1)
+
 
 
 int16_t peak_frequency(float* data){
@@ -69,6 +74,8 @@ void sound_position_detection(void){
 	static float phase_right;
 	static float phase_left;
 	static float phase_back;
+	static float phase_diff = 2;
+	static float phase_diff_old = 2;
 	static uint16_t distance;
 
 	distance = VL53L0X_get_dist_mm();
@@ -80,12 +87,14 @@ void sound_position_detection(void){
 	phase_back = phase_mic(freq_index_r, micBack_output, micBack_cmplx_input);
 
 	if(freq_index_r >= FREQ_FORWARD_L && freq_index_r <= FREQ_FORWARD_H){
+		phase_diff_old = phase_diff;
+		phase_diff = phase_right-phase_left;
 //		if ((phase_back-phase_left) > 0){
-//			if ((phase_right-phase_left) > 0.2 && (phase_right-phase_left) < 1.5 ){
+//			if (phase_diff > PHASE_MIN && phase_diff < PHASE_MAX ){
 //				left_motor_set_speed(-600);
 //				right_motor_set_speed(600);
 //			}
-//			else if ((phase_right-phase_left) < -0.2 && (phase_right-phase_left) > -1.5){
+//			else if (phase_diff < -PHASE_MIN && phase_diff > -PHASE_MAX){
 //				left_motor_set_speed(600);
 //				right_motor_set_speed(-600);
 //			}
@@ -95,18 +104,32 @@ void sound_position_detection(void){
 //			}
 //		}
 //		if ((phase_back-phase_left) < 0) {
-			if ((phase_right-phase_left) > 0.2 && (phase_right-phase_left) < 1.5 ){
-				left_motor_set_speed(600);
-				right_motor_set_speed(-600);
+			if (phase_diff > PHASE_MIN && phase_diff < PHASE_MAX &&
+				phase_diff_old > PHASE_MIN && phase_diff_old < PHASE_MAX ){
+
+					left_motor_set_speed(600);
+					right_motor_set_speed(-600);
+
 			}
-			else if ((phase_right-phase_left) < -0.2 && (phase_right-phase_left) > -1.5){
-				left_motor_set_speed(-600);
-				right_motor_set_speed(600);
+			else if (phase_diff < -PHASE_MIN && phase_diff > -PHASE_MAX &&
+					 phase_diff_old < -PHASE_MIN && phase_diff_old > -PHASE_MAX){
+
+					left_motor_set_speed(-600);
+					right_motor_set_speed(600);
+
 			}
-			else{
+			else if(phase_diff < PHASE_MIN && phase_diff > -PHASE_MIN &&
+					phase_diff_old < PHASE_MIN && phase_diff_old > -PHASE_MIN){
+//				if ((phase_back-phase_left) < 0){
+//
+//				}
 				if (distance < 70){
 					motors_stop();
 				}
+//				else if(distance < 70){
+//					left_motor_set_speed(-400);
+//					right_motor_set_speed(-400);
+//				}
 				else{
 						left_motor_set_speed(600);
 						right_motor_set_speed(600);
@@ -119,7 +142,7 @@ void sound_position_detection(void){
 			right_motor_set_speed(0);
 	}
 //	chprintf((BaseSequentialStream *)&SD3, "phase1 = %f\n", phase_right - phase_left);
-	chprintf((BaseSequentialStream *)&SD3, "phase2 = %f\n", phase_left);
+	chprintf((BaseSequentialStream *)&SD3, "phase2 = %f\n", phase_diff);
 //	chprintf((BaseSequentialStream *)&SD3, "phase3 = %f\n", phase_back);
 }
 

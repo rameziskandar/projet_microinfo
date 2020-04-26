@@ -61,10 +61,8 @@ int main(void)
 
     while (1)
     {
-    	//distance_mm = VL53L0X_get_dist_mm();
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
-     	//VL53L0X_obstacle_stop ();
-
+    	chThdSleepMilliseconds(1000);
     }
 }
 
