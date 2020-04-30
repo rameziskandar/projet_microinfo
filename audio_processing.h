@@ -19,7 +19,7 @@ typedef enum {
 
 int16_t peak_frequency(float* data);
 
-void sound_position_detection(void);
+uint16_t sound_position_detection(uint8_t i, uint16_t freq);
 
 float phase_mic (int16_t reference, float* data1, float* data2);
 
