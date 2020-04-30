@@ -114,7 +114,8 @@ void sound_position_detection(void){
 				right_motor_set_speed(600);
 			}
 			else if (distance < DIST_STOP){
-				motors_stop();
+				left_motor_set_speed(0);
+				right_motor_set_speed(0);
 			}
 
 			else{
@@ -162,7 +163,8 @@ void sound_remote(float* data){
 	//go forward
 	if(freq_index >= FREQ_FORWARD_L && freq_index <= FREQ_FORWARD_H){
 		if (distance < 100) {
-			motors_stop();
+			left_motor_set_speed(0);
+			right_motor_set_speed(0);
 		}
 		else {
 			left_motor_set_speed(600);

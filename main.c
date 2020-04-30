@@ -13,6 +13,7 @@
 #include <sensors/VL53L0X/VL53L0X.h>
 
 #include <audio_processing.h>
+#include <TOF_processing.h>
 #include <fft.h>
 #include <communications.h>
 #include <arm_math.h>
@@ -40,6 +41,17 @@ static void serial_start(void)
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
+
+#define DIST_STOP   70  //distance between robot and obstacle in mm
+void sensor_distance(void){
+	static uint16_t distance;
+
+	distance = VL53L0X_get_dist_mm();
+
+	if(distance > DIST_STOP){}
+
+
+}
 
 
 

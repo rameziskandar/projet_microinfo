@@ -13,7 +13,7 @@ CSRC += ./main.c \
 		./audio_processing.c \
 		./communications.c \
 		./fft.c \
-		
+		./TOF_processing.c \
 		
 
 #Header folders to include
