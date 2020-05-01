@@ -20,8 +20,8 @@
 
 #define SCAN_SPEED		300
 #define SCAN_ANGLE		30 //angle in degrees
-#define DEGREES_LEFT	20 //number of "steps" to go SCAN_ANGLE to the left
-#define DEGREES_RIGHT	40 //number of "steps" to go SCAN_ANGLE to the right
+#define DEGREES_LEFT	500 //number of "steps" to go SCAN_ANGLE to the left
+#define DEGREES_RIGHT	1000 //number of "steps" to go SCAN_ANGLE to the right
 #define STEPS_FORWARD	50 //number of "steps" to parcour DIST_FORWARD
 #define DIST_FORWARD	10 //distance in cm
 
@@ -75,16 +75,16 @@ void avoid_obstacle(void){
 	// fonctions turn right et turn left
 	avoid_angle = convert_angle(abs(beta) - SCAN_ANGLE);
 
-	if(distance_left < distance_right){
-		turn_right(avoid_angle);
-		avoid_distance = 2 * convert_distance(distance_right);
-		go_straight(avoid_distance);
-	}
-	else if(distance_left > distance_right){
-		turn_left(avoid_angle);
-		avoid_distance = 2 * convert_distance(distance_left);
-		go_straight(avoid_distance);
-	}
+//	if(distance_left < distance_right){
+//		turn_right(avoid_angle);
+//		avoid_distance = 2 * convert_distance(distance_right);
+//		go_straight(avoid_distance);
+//	}
+//	else if(distance_left > distance_right){
+//		turn_left(avoid_angle);
+//		avoid_distance = 2 * convert_distance(distance_left);
+//		go_straight(avoid_distance);
+//	}
 
 }
 
@@ -97,8 +97,13 @@ void avoid_obstacle(void){
 //	right_motor_set_speed(0);
 //}
 void turn_right(uint32_t angle){
-	systime_t time_start = chVTGetSystemTime();
+	static systime_t time_start;
+	time_start = chVTGetSystemTime();
+
+
 	while(chVTGetSystemTime()-time_start < angle){
+
+		chprintf((BaseSequentialStream *)&SD3, "time = %f\n", chVTGetSystemTime()-time_start);
 		left_motor_set_speed(SCAN_SPEED);
 		right_motor_set_speed(-SCAN_SPEED);
 	}
@@ -108,7 +113,11 @@ void turn_right(uint32_t angle){
 
 
 void turn_left(uint32_t angle){
-	for(uint32_t i = 0; i < angle; i++){
+	static systime_t time_start;
+	time_start = chVTGetSystemTime();
+//	chprintf((BaseSequentialStream *)&SD3, "time = %f\n", chVTGetSystemTime()-time_start);
+
+		while(chVTGetSystemTime()-time_start < angle){
 		left_motor_set_speed(-SCAN_SPEED);
 		right_motor_set_speed(SCAN_SPEED);
 	}

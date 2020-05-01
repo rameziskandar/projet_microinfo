@@ -58,13 +58,21 @@ int main(void)
     usb_start();
     //inits the motors
     motors_init();
-    mic_start(&processAudioData);
+//    mic_start(&processAudioData);
     VL53L0X_start();
 
+    uint16_t distance;
     while (1)
     {
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
-    	chThdSleepMilliseconds(1000);
+
+    	distance = VL53L0X_get_dist_mm();
+    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
+
+    	if (distance < 70){
+    		avoid_obstacle();
+    	}
+//    	chThdSleepMilliseconds(1000);
     }
 }
 
