@@ -28,16 +28,16 @@ static float micBack_output[FFT_SIZE];
 
 #define MIN_VALUE_THRESHOLD	10000 
 
-#define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
-#define FREQ_FORWARD	16	//250Hz
-#define FREQ_LEFT		19	//296Hz
-#define FREQ_RIGHT		23	//359HZ
-#define FREQ_BACKWARD	26	//406Hz
-#define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
-#define PHASE_MIN		0.15 //minimum threshold for phase difference values
-#define PHASE_MAX		2 	//maximum threshold for phase difference values
-#define PHASE_STOP		0.1 //minimum threshold for phase difference values for stop
-#define DIST_STOP		70  //distance between robot and obstacle in mm
+#define MIN_FREQ		10		//we don't analyze before this index to not use resources for nothing
+#define FREQ_FORWARD	16		//250Hz
+#define FREQ_LEFT		19		//296Hz
+#define FREQ_RIGHT		23		//359HZ
+#define FREQ_BACKWARD	26		//406Hz
+#define MAX_FREQ		30		//we don't analyze after this index to not use resources for nothing
+#define PHASE_MIN		0.15 	//minimum threshold for phase difference values
+#define PHASE_MAX		1.2		//maximum threshold for phase difference values
+#define PHASE_STOP		0.11	//minimum threshold for phase difference values for stop
+#define DIST_STOP		70  	//distance between robot and obstacle in mm
 
 
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
@@ -51,19 +51,23 @@ static float micBack_output[FFT_SIZE];
 
 
 
-int16_t peak_frequency(float* data){
-	float max_norm = MIN_VALUE_THRESHOLD;
-	int16_t freq_index = -1;
-
-	//search for the highest peak
-	for(uint16_t i = MIN_FREQ ; i <= MAX_FREQ ; i++){
-		if(data[i] > max_norm){
-			max_norm = data[i];
-			freq_index = i;
-		}
-	}
-	return freq_index;
-}
+//int16_t freq_norm(float* data, uint16_t freq){
+//	float max_norm = MIN_VALUE_THRESHOLD;
+//	int16_t freq_index = -1;
+//
+//	//search for the highest peak
+//	for(uint16_t i = MIN_FREQ ; i <= MAX_FREQ ; i++){
+//		if(data[i] > max_norm){
+//			max_norm = data[i];
+//			freq_index = i;
+//		}
+//	}
+//	if(data[freq] > 15000){
+//		max_norm =
+//	}
+//	chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", max_norm);
+//	return data[freq];
+//}
 
 /*
 *	Simple function used to detect the highest value in a buffer
@@ -71,7 +75,7 @@ int16_t peak_frequency(float* data){
 */
 uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
-	static int16_t freq_index_r;
+	static float freq_norm_r;
 	static float phase_right;
 	static float phase_left;
 	static float phase_back;
@@ -84,14 +88,19 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
 	distance = VL53L0X_get_dist_mm();
 
-	freq_index_r = peak_frequency(micRight_output);
-	phase_right = atan2f(micRight_cmplx_input[2*freq_index_r+1],micRight_cmplx_input[2*freq_index_r]);
+	freq_norm_r = micRight_output[freq];
+	chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
 
-	phase_left = phase_mic(freq_index_r, micLeft_output, micLeft_cmplx_input);
-	phase_back = phase_mic(freq_index_r, micBack_output, micBack_cmplx_input);
-	phase_front= phase_mic(freq_index_r, micFront_output, micFront_cmplx_input);
+	phase_right = atan2f(micRight_cmplx_input[2*freq+1],micRight_cmplx_input[2*freq]);
+	phase_left  = atan2f(micLeft_cmplx_input[2*freq+1],micLeft_cmplx_input[2*freq]);
+	phase_back  = atan2f(micBack_cmplx_input[2*freq+1],micBack_cmplx_input[2*freq]);
+	phase_front = atan2f(micFront_cmplx_input[2*freq+1],micFront_cmplx_input[2*freq]);
 
-	if(freq_index_r >= freq - 1 && freq_index_r <= freq + 1){
+//	phase_front= phase_mic(freq, micFront_output, micFront_cmplx_input);
+
+//	if(freq_index_r >= freq - 1 && freq_index_r <= freq + 1){
+	if(freq_norm_r > 15000){
+
 		phase_diff_old_rl = phase_diff_rl;
 		phase_diff_rl = phase_right-phase_left;
 
@@ -109,16 +118,16 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				left_motor_set_speed(0);
 				right_motor_set_speed(0);
 
-				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_fb);
-				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_rl);
+//				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_fb);
+//				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_rl);
 				return i+1;
 			}
 
-			else if((phase_back-phase_left) > 0 && (phase_back-phase_left) <= (phase_back-phase_right) + 0.1 &&
-				(phase_back-phase_left) >= (phase_back-phase_right) - 0.1){
+			else if(phase_diff_fb < 0 && phase_diff_old_fb < 0 &&
+					phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN){
 
-				left_motor_set_speed(-600);
-				right_motor_set_speed(600);
+				left_motor_set_speed(-500);
+				right_motor_set_speed(500);
 				return i;
 			}
 //			else if (distance < DIST_STOP){
@@ -136,16 +145,16 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 		else if (phase_diff_rl > PHASE_MIN && phase_diff_rl < PHASE_MAX &&
 			phase_diff_old_rl > PHASE_MIN && phase_diff_old_rl < PHASE_MAX ){
 
-				left_motor_set_speed(600);
-				right_motor_set_speed(-600);
+				left_motor_set_speed(500);
+				right_motor_set_speed(-500);
 				return i;
 
 		}
 		else if (phase_diff_rl < -PHASE_MIN && phase_diff_rl > -PHASE_MAX &&
 				 phase_diff_old_rl < -PHASE_MIN && phase_diff_old_rl > -PHASE_MAX){
 
-				left_motor_set_speed(-600);
-				right_motor_set_speed(600);
+				left_motor_set_speed(-500);
+				right_motor_set_speed(500);
 				return i;
 
 		}
@@ -162,20 +171,20 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 	return  i;
 }
 
-float phase_mic (int16_t reference, float* data1, float* data2){
-
-	static int16_t freq_index;
-	static float phase;
-
-	freq_index = peak_frequency(data1);
-	if(freq_index <= reference + 1 && freq_index >= reference - 1 ){
-		phase = atan2f(data2[2*freq_index+1],data2[2*freq_index]);
-		return phase;
-	}
-	else {
-		return 0;
-	}
-}
+//float phase_mic (int16_t reference, float* data1, float* data2){
+//
+//	static int16_t freq_index;
+//	static float phase;
+//
+//	freq_index = peak_frequency(data1);
+//	if(freq_index <= reference + 1 && freq_index >= reference - 1 ){
+//		phase = atan2f(data2[2*freq_index+1],data2[2*freq_index]);
+//		return phase;
+//	}
+//	else {
+//		return 0;
+//	}
+//}
 
 /*
 *	Simple function used to detect the highest value in a buffer
@@ -309,10 +318,10 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		else if (index < 40){
 			index = sound_position_detection(index, FREQ_RIGHT);
 		}
-		else if (index == 60){
+		else if (index == 40){
 			index=0;
 		}
-		chprintf((BaseSequentialStream *)&SD3, "index = %d\n", index);
+//		chprintf((BaseSequentialStream *)&SD3, "index = %d\n", index);
 	}
 }
 
