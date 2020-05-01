@@ -43,16 +43,6 @@ MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
 
 #define DIST_STOP   70  //distance between robot and obstacle in mm
-void sensor_distance(void){
-	static uint16_t distance;
-
-	distance = VL53L0X_get_dist_mm();
-
-	if(distance > DIST_STOP){}
-
-
-}
-
 
 
 int main(void)

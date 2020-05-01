@@ -3,6 +3,7 @@
  *
  *  Created on: 29 avr. 2020
  *      Author: Hendrik
+ *
  */
 #include "ch.h"
 #include "hal.h"
@@ -55,6 +56,7 @@ void avoid_obstacle(void){
 	static int16_t avoid_angle;
 	static int16_t avoid_distance;
 
+
 	turn_left(DEGREES_LEFT);
 	distance_left = VL53L0X_get_dist_mm();
 	vect_left_x = -(distance_left * sin(SCAN_ANGLE));
@@ -86,8 +88,17 @@ void avoid_obstacle(void){
 
 }
 
-void turn_right(uint32_t angle_right){
-	for(uint32_t i = 0; i < angle_right; i++){
+//void turn_right(uint32_t angle){
+//	for(uint32_t i = 0; i < angle_right; i++){
+//		left_motor_set_speed(SCAN_SPEED);
+//		right_motor_set_speed(-SCAN_SPEED);
+//	}
+//	left_motor_set_speed(0);
+//	right_motor_set_speed(0);
+//}
+void turn_right(uint32_t angle){
+	systime_t time_start = chVTGetSystemTime();
+	while(chVTGetSystemTime()-time_start < angle){
 		left_motor_set_speed(SCAN_SPEED);
 		right_motor_set_speed(-SCAN_SPEED);
 	}
@@ -95,8 +106,9 @@ void turn_right(uint32_t angle_right){
 	right_motor_set_speed(0);
 }
 
-void turn_left(uint32_t angle_left){
-	for(uint32_t i = 0; i < angle_left; i++){
+
+void turn_left(uint32_t angle){
+	for(uint32_t i = 0; i < angle; i++){
 		left_motor_set_speed(-SCAN_SPEED);
 		right_motor_set_speed(SCAN_SPEED);
 	}

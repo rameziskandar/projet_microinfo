@@ -3,9 +3,9 @@ void sensor_distance(void);
 
 void avoid_obstacle(void);
 
-void turn_right(uint32_t angle_right);
+void turn_right(uint32_t angle);
 
-void turn_left(uint32_t angle_left);
+void turn_left(uint32_t angle);
 
 void go_straight(uint32_t distance_forward);
 
