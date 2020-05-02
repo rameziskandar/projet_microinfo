@@ -19,13 +19,13 @@
 #include <TOF_processing.h>
 
 #define SCAN_SPEED		300
-#define SCAN_ANGLE		30 //angle in degrees
-#define DEGREES_LEFT	500 //number of "steps" to go SCAN_ANGLE to the left
-#define DEGREES_RIGHT	1000 //number of "steps" to go SCAN_ANGLE to the right
-#define STEPS_FORWARD	50 //number of "steps" to parcour DIST_FORWARD
-#define DIST_FORWARD	10 //distance in cm
+#define SCAN_ANGLE		PI/9		//angle in degrees
+#define DEGREES_LEFT	240		//time to go SCAN_ANGLE to the left
+#define DEGREES_RIGHT	480		//time to go SCAN_ANGLE to the right
+#define SPEED_FORWARD	38.64	//[mm/s] for SCAN_SPEED = 300 [steps/s]
+#define TURN_SPEED		1.46	//[rad/s] for SCAN_SPEED = 300 [steps/s]
 
-#define DIST_STOP   	70  //distance between robot and obstacle in mm
+#define DIST_STOP   	70  	//distance between robot and obstacle in mm
 
 
 void sensor_distance(void){
@@ -75,35 +75,28 @@ void avoid_obstacle(void){
 	// fonctions turn right et turn left
 	avoid_angle = convert_angle(abs(beta) - SCAN_ANGLE);
 
-//	if(distance_left < distance_right){
-//		turn_right(avoid_angle);
-//		avoid_distance = 2 * convert_distance(distance_right);
-//		go_straight(avoid_distance);
-//	}
-//	else if(distance_left > distance_right){
-//		turn_left(avoid_angle);
-//		avoid_distance = 2 * convert_distance(distance_left);
-//		go_straight(avoid_distance);
-//	}
+	if(distance_left < distance_right){
+		turn_right(avoid_angle);
+		avoid_distance = 2 * convert_distance(distance_right);
+		go_straight(avoid_distance);
+	}
+	else if(distance_left > distance_right){
+		turn_left(avoid_angle);
+		avoid_distance = 2 * convert_distance(distance_left);
+		go_straight(avoid_distance);
+	}
 
 }
 
-//void turn_right(uint32_t angle){
-//	for(uint32_t i = 0; i < angle_right; i++){
-//		left_motor_set_speed(SCAN_SPEED);
-//		right_motor_set_speed(-SCAN_SPEED);
-//	}
-//	left_motor_set_speed(0);
-//	right_motor_set_speed(0);
-//}
-void turn_right(uint32_t angle){
+
+void turn_right(uint32_t turn_time){
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
 
 
-	while(chVTGetSystemTime()-time_start < angle){
+	while(chVTGetSystemTime()-time_start < turn_time){
 
-		chprintf((BaseSequentialStream *)&SD3, "time = %f\n", chVTGetSystemTime()-time_start);
+		//chprintf((BaseSequentialStream *)&SD3, "time = %f\n", chVTGetSystemTime()-time_start);
 		left_motor_set_speed(SCAN_SPEED);
 		right_motor_set_speed(-SCAN_SPEED);
 	}
@@ -112,12 +105,13 @@ void turn_right(uint32_t angle){
 }
 
 
-void turn_left(uint32_t angle){
+void turn_left(uint32_t turn_time){
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
 //	chprintf((BaseSequentialStream *)&SD3, "time = %f\n", chVTGetSystemTime()-time_start);
 
-		while(chVTGetSystemTime()-time_start < angle){
+	while(chVTGetSystemTime()-time_start < turn_time){
+
 		left_motor_set_speed(-SCAN_SPEED);
 		right_motor_set_speed(SCAN_SPEED);
 	}
@@ -126,7 +120,10 @@ void turn_left(uint32_t angle){
 }
 
 void go_straight(uint32_t distance_forward){
-	for(uint32_t i = 0; i < distance_forward; i++){
+	static systime_t time_start;
+	time_start = chVTGetSystemTime();
+	while(chVTGetSystemTime()-time_start < distance_forward){
+
 		left_motor_set_speed(SCAN_SPEED);
 		right_motor_set_speed(SCAN_SPEED);
 	}
@@ -136,18 +133,19 @@ void go_straight(uint32_t distance_forward){
 
 uint32_t convert_angle(int16_t angle){
 
-	uint32_t steps;
+	uint32_t time;
 
-	steps = (angle * DEGREES_LEFT)/SCAN_ANGLE;
+	time = abs(angle)/TURN_SPEED;
 
-	return steps;
+	return time;
 }
 
+//distance in mm
 uint32_t convert_distance(int16_t distance){
 
-	uint32_t steps;
+	uint32_t time;
 
-	steps = (distance * STEPS_FORWARD)/DIST_FORWARD;
+	time = distance / SPEED_FORWARD;
 
-	return steps;
+	return time;
 }
