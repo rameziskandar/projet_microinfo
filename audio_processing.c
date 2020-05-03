@@ -26,52 +26,22 @@ static float micRight_output[FFT_SIZE];
 static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
-#define MIN_VALUE_THRESHOLD	10000 
 
-#define MIN_FREQ		10		//we don't analyze before this index to not use resources for nothing
 #define FREQ_FORWARD	16		//250Hz
 #define FREQ_LEFT		19		//296Hz
 #define FREQ_RIGHT		23		//359HZ
 #define FREQ_BACKWARD	26		//406Hz
-#define MAX_FREQ		30		//we don't analyze after this index to not use resources for nothing
+
 #define PHASE_MIN		0.15 	//minimum threshold for phase difference values
 #define PHASE_MAX		1.2		//maximum threshold for phase difference values
 #define PHASE_STOP		0.11	//minimum threshold for phase difference values for stop
 #define DIST_STOP		70  	//distance between robot and obstacle in mm
 
 
-#define FREQ_FORWARD_L		(FREQ_FORWARD-1)
-#define FREQ_FORWARD_H		(FREQ_FORWARD+1)
-#define FREQ_LEFT_L			(FREQ_LEFT-1)
-#define FREQ_LEFT_H			(FREQ_LEFT+1)
-#define FREQ_RIGHT_L		(FREQ_RIGHT-1)
-#define FREQ_RIGHT_H		(FREQ_RIGHT+1)
-#define FREQ_BACKWARD_L		(FREQ_BACKWARD-1)
-#define FREQ_BACKWARD_H		(FREQ_BACKWARD+1)
-
-
-
-//int16_t freq_norm(float* data, uint16_t freq){
-//	float max_norm = MIN_VALUE_THRESHOLD;
-//	int16_t freq_index = -1;
-//
-//	//search for the highest peak
-//	for(uint16_t i = MIN_FREQ ; i <= MAX_FREQ ; i++){
-//		if(data[i] > max_norm){
-//			max_norm = data[i];
-//			freq_index = i;
-//		}
-//	}
-//	if(data[freq] > 15000){
-//		max_norm =
-//	}
-//	chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", max_norm);
-//	return data[freq];
-//}
 
 /*
-*	Simple function used to detect the highest value in a buffer
-*	and to find where the sound comes from.
+*	Simple function used to detect the sound direction for a
+*	given frequency and to move towards it.
 */
 uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
@@ -88,28 +58,31 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
 	distance = VL53L0X_get_dist_mm();
 
+	//look for the magnitude of a given frequency
 	freq_norm_r = micRight_output[freq];
 	chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
 
+	//compute the phase for each mic
 	phase_right = atan2f(micRight_cmplx_input[2*freq+1],micRight_cmplx_input[2*freq]);
 	phase_left  = atan2f(micLeft_cmplx_input[2*freq+1],micLeft_cmplx_input[2*freq]);
 	phase_back  = atan2f(micBack_cmplx_input[2*freq+1],micBack_cmplx_input[2*freq]);
 	phase_front = atan2f(micFront_cmplx_input[2*freq+1],micFront_cmplx_input[2*freq]);
 
-//	phase_front= phase_mic(freq, micFront_output, micFront_cmplx_input);
 
-//	if(freq_index_r >= freq - 1 && freq_index_r <= freq + 1){
 	if(freq_norm_r > 15000){
 
 		phase_diff_old_rl = phase_diff_rl;
 		phase_diff_rl = phase_right-phase_left;
 
+		//look if the phase difference between the right and left mic is almost equal to zero. We take 2 consecutive values
+		//to be sure that we are not taking in consideration the errors from the mic
 		if(phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN &&
 			phase_diff_old_rl < PHASE_MIN && phase_diff_old_rl > -PHASE_MIN){
 
 			phase_diff_old_fb = phase_diff_fb;
 			phase_diff_fb = phase_front - phase_back;
 
+			//detecting if the robot is underneath the sound source
 			if(phase_diff_fb < PHASE_STOP && phase_diff_fb > -PHASE_STOP &&
 				phase_diff_old_fb < PHASE_STOP && phase_diff_old_fb > -PHASE_STOP &&
 				phase_diff_rl < PHASE_STOP && phase_diff_rl > -PHASE_STOP &&
@@ -117,11 +90,9 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
 				left_motor_set_speed(0);
 				right_motor_set_speed(0);
-
-//				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_fb);
-//				chprintf((BaseSequentialStream *)&SD3, "index = %f\n", phase_diff_rl);
 				return i+1;
 			}
+
 
 			else if(phase_diff_fb < 0 && phase_diff_old_fb < 0 &&
 					phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN){
@@ -133,6 +104,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 //			else if (distance < DIST_STOP){
 //				left_motor_set_speed(0);
 //				right_motor_set_speed(0);
+//				return i;
 //			}
 
 			else{
@@ -142,6 +114,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 			}
 		}
 
+		//rotating the robot towards the sound source
 		else if (phase_diff_rl > PHASE_MIN && phase_diff_rl < PHASE_MAX &&
 			phase_diff_old_rl > PHASE_MIN && phase_diff_old_rl < PHASE_MAX ){
 
@@ -150,6 +123,8 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				return i;
 
 		}
+
+		//rotating the robot towards the sound source
 		else if (phase_diff_rl < -PHASE_MIN && phase_diff_rl > -PHASE_MAX &&
 				 phase_diff_old_rl < -PHASE_MIN && phase_diff_old_rl > -PHASE_MAX){
 
@@ -165,71 +140,11 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 			right_motor_set_speed(0);
 			return i;
 	}
-//	chprintf((BaseSequentialStream *)&SD3, "phase1 = %f\n", phase_right - phase_left);
-//	chprintf((BaseSequentialStream *)&SD3, "phase2 = %f\n", phase_diff);
-//	chprintf((BaseSequentialStream *)&SD3, "phase3 = %f\n", phase_back);
+
 	return  i;
 }
 
-//float phase_mic (int16_t reference, float* data1, float* data2){
-//
-//	static int16_t freq_index;
-//	static float phase;
-//
-//	freq_index = peak_frequency(data1);
-//	if(freq_index <= reference + 1 && freq_index >= reference - 1 ){
-//		phase = atan2f(data2[2*freq_index+1],data2[2*freq_index]);
-//		return phase;
-//	}
-//	else {
-//		return 0;
-//	}
-//}
 
-/*
-*	Simple function used to detect the highest value in a buffer
-*	and to execute a motor command depending on it
-*/
-void sound_remote(float* data){
-
-	static uint16_t distance;
-	static int16_t freq_index;
-
-	freq_index = peak_frequency(data);
-	distance = VL53L0X_get_dist_mm();
-
-	//go forward
-	if(freq_index >= FREQ_FORWARD_L && freq_index <= FREQ_FORWARD_H){
-		if (distance < 100) {
-			left_motor_set_speed(0);
-			right_motor_set_speed(0);
-		}
-		else {
-			left_motor_set_speed(600);
-			right_motor_set_speed(600);
-		}
-	}
-	//turn left
-	else if(freq_index >= FREQ_LEFT_L && freq_index <= FREQ_LEFT_H){
-		left_motor_set_speed(-600);
-		right_motor_set_speed(600);
-	}
-	//turn right
-	else if(freq_index >= FREQ_RIGHT_L && freq_index <= FREQ_RIGHT_H){
-		left_motor_set_speed(600);
-		right_motor_set_speed(-600);
-	}
-	//go backward
-	else if(freq_index >= FREQ_BACKWARD_L && freq_index <= FREQ_BACKWARD_H){
-		left_motor_set_speed(-600);
-		right_motor_set_speed(-600);
-	}
-	else{
-		left_motor_set_speed(0);
-		right_motor_set_speed(0);
-	}
-	
-}
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
@@ -311,7 +226,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		nb_samples = 0;
 		mustSend++;
 
-//		sound_remote(micLeft_output);
 		if (index < 20){
 			index = sound_position_detection(index, FREQ_LEFT);
 		}

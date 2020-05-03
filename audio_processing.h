@@ -17,11 +17,9 @@ typedef enum {
 	BACK_OUTPUT
 } BUFFER_NAME_t;
 
-int16_t peak_frequency(float* data);
 
 uint16_t sound_position_detection(uint8_t i, uint16_t freq);
 
-float phase_mic (int16_t reference, float* data1, float* data2);
 
 void processAudioData(int16_t *data, uint16_t num_samples);
 
