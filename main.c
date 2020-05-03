@@ -13,6 +13,7 @@
 #include <sensors/VL53L0X/VL53L0X.h>
 
 #include <audio_processing.h>
+#include <TOF_processing.h>
 #include <fft.h>
 #include <communications.h>
 #include <arm_math.h>
@@ -41,6 +42,7 @@ messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
 
+#define DIST_STOP   70  //distance between robot and obstacle in mm
 
 
 int main(void)
@@ -56,13 +58,21 @@ int main(void)
     usb_start();
     //inits the motors
     motors_init();
-    mic_start(&processAudioData);
+//    mic_start(&processAudioData);
     VL53L0X_start();
 
+    uint16_t distance;
     while (1)
     {
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
-    	chThdSleepMilliseconds(1000);
+
+    	distance = VL53L0X_get_dist_mm();
+    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
+
+    	if (distance < 70){
+    		avoid_obstacle();
+    	}
+//    	chThdSleepMilliseconds(1000);
     }
 }
 
