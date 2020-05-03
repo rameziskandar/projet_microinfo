@@ -19,7 +19,8 @@
 #include <TOF_processing.h>
 
 #define SCAN_SPEED		300
-#define SCAN_ANGLE		PI/9		//angle in degrees
+#define SCAN_ANGLE		PI/9	//angle in rad
+#define ANGLE1			PI/2	//angle in rad
 #define DEGREES_LEFT	240		//time to go SCAN_ANGLE to the left
 #define DEGREES_RIGHT	480		//time to go SCAN_ANGLE to the right
 #define SPEED_FORWARD	38.64	//[mm/s] for SCAN_SPEED = 300 [steps/s]
@@ -56,6 +57,9 @@ void avoid_obstacle(void){
 	static int16_t avoid_angle;
 	static int16_t avoid_distance;
 
+	//DEGREES LEFT en [ms] -> system ticks
+	//int16_t test_angle = convert_angle(SCAN_ANGLE);
+	//turn_left(test_angle);
 
 	turn_left(DEGREES_LEFT);
 	distance_left = VL53L0X_get_dist_mm();
@@ -85,6 +89,7 @@ void avoid_obstacle(void){
 		avoid_distance = 2 * convert_distance(distance_left);
 		go_straight(avoid_distance);
 	}
+
 
 }
 
@@ -119,10 +124,10 @@ void turn_left(uint32_t turn_time){
 	right_motor_set_speed(0);
 }
 
-void go_straight(uint32_t distance_forward){
+void go_straight(uint32_t time_forward){
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
-	while(chVTGetSystemTime()-time_start < distance_forward){
+	while(chVTGetSystemTime()-time_start < time_forward){
 
 		left_motor_set_speed(SCAN_SPEED);
 		right_motor_set_speed(SCAN_SPEED);
@@ -133,19 +138,19 @@ void go_straight(uint32_t distance_forward){
 
 uint32_t convert_angle(int16_t angle){
 
-	uint32_t time;
+	uint32_t turn_time;
 
-	time = abs(angle)/TURN_SPEED;
+	turn_time = 1000*S2ST(abs(angle)/TURN_SPEED);
 
-	return time;
+	return turn_time;
 }
 
 //distance in mm
 uint32_t convert_distance(int16_t distance){
 
-	uint32_t time;
+	uint32_t time_forward;
 
-	time = distance / SPEED_FORWARD;
+	time_forward = 1000*S2ST(distance / SPEED_FORWARD);
 
-	return time;
+	return time_forward;
 }

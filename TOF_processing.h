@@ -7,7 +7,7 @@ void turn_right(uint32_t turn_time);
 
 void turn_left(uint32_t turn_time);
 
-void go_straight(uint32_t distance_forward);
+void go_straight(uint32_t time_forward);
 
 uint32_t convert_angle(int16_t angle);
 
