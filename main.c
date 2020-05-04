@@ -58,7 +58,9 @@ int main(void)
     usb_start();
     //inits the motors
     motors_init();
-//    mic_start(&processAudioData);
+    //starts the mic communication
+    mic_start(&processAudioData);
+    //starts the TOF sensor communication
     VL53L0X_start();
 
     uint16_t distance;
@@ -66,13 +68,13 @@ int main(void)
     {
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
 
-    	distance = VL53L0X_get_dist_mm();
-    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
-
-    	if (distance < 70){
-    		avoid_obstacle();
-    	}
-//    	chThdSleepMilliseconds(1000);
+//    	distance = VL53L0X_get_dist_mm();
+////    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
+//
+//    	if (distance < 70){
+//    		avoid_obstacle();
+//    	}
+    	chThdSleepMilliseconds(1000);
     }
 }
 

@@ -9,6 +9,6 @@ void turn_left(uint32_t turn_time);
 
 void go_straight(uint32_t time_forward);
 
-uint32_t convert_angle(int16_t angle);
+uint32_t convert_angle(float angle);
 
 uint32_t convert_distance(int16_t distance);

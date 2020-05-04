@@ -8,6 +8,7 @@
 #include <audio/microphone.h>
 #include <audio_processing.h>
 #include <communications.h>
+#include <TOF_processing.h>
 #include <fft.h>
 #include <arm_math.h>
 #include <sensors/VL53L0X/VL53L0X.h>
@@ -101,11 +102,10 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				right_motor_set_speed(500);
 				return i;
 			}
-//			else if (distance < DIST_STOP){
-//				left_motor_set_speed(0);
-//				right_motor_set_speed(0);
-//				return i;
-//			}
+			else if (distance < DIST_STOP){
+				avoid_obstacle();
+				return i;
+			}
 
 			else{
 					left_motor_set_speed(600);
