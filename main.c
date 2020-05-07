@@ -19,12 +19,6 @@
 #include <arm_math.h>
 
 
-//uncomment to send the FFTs results from the real microphones
-//#define SEND_FROM_MIC
-
-//uncomment to use double buffering to send the FFT to the computer
-#define DOUBLE_BUFFERING
-
 
 static void serial_start(void)
 {
@@ -41,8 +35,6 @@ static void serial_start(void)
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
-
-#define DIST_STOP   70  //distance between robot and obstacle in mm
 
 
 int main(void)
@@ -63,7 +55,6 @@ int main(void)
     //starts the TOF sensor communication
     VL53L0X_start();
 
-    uint16_t distance;
     while (1)
     {
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
@@ -74,6 +65,9 @@ int main(void)
 //    	if (distance < 70){
 //    		avoid_obstacle();
 //    	}
+
+
+//    	wait send to computer
     	chThdSleepMilliseconds(1000);
     }
 }

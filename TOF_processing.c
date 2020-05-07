@@ -18,16 +18,16 @@
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <TOF_processing.h>
 
-#define SCAN_SPEED		500
+#define ROT_SPEED		500
 #define AVANCE_SPEED	600
 #define SCAN_ANGLE		PI/9	//angle in rad
 #define TIME_LEFT		240		//time to go SCAN_ANGLE to the left
 #define TIME_RIGHT		480		//time to go SCAN_ANGLE to the right
-#define SPEED_FORWARD	77.28	//[mm/s] for SCAN_SPEED = 600 [steps/s]
-#define TURN_SPEED		2.43	//[rad/s] for SCAN_SPEED = 500 [steps/s]
+#define SPEED_FORWARD	77.28	//[mm/s] for ROT_SPEED = 600 [steps/s]
+#define TURN_SPEED		2.43	//[rad/s] for ROT_SPEED = 500 [steps/s]
 #define AVOID_MARGIN	2.5
 
-#define DIST_STOP   	70  	//distance between robot and obstacle in mm
+#define NO_OBSTACLE		500  	//minimum threshold for when there is no obstacle scanned
 
 
 
@@ -43,10 +43,9 @@ void avoid_obstacle(uint16_t distance){
 	static float vect_diff_x;
 	static float vect_diff_y;
 	static float beta;
-	static uint32_t avoid_time;
+	static uint16_t avoid_time;
 	static float straight_time;
 	static float norm;
-	static int avoided = 0;
 
 
 	turn_left(TIME_LEFT);
@@ -59,6 +58,8 @@ void avoid_obstacle(uint16_t distance){
 	turn_right(TIME_RIGHT);
 	distance_right = VL53L0X_get_dist_mm();
 
+    	chprintf((BaseSequentialStream *)&SD3, "dist_left = %d\n dist_right = %d\n", distance_left, distance_right);
+
 	//vecteur du scan a droite
 	vect_right_x = distance_right * sin(SCAN_ANGLE);
 	vect_right_y = distance_right * cos(SCAN_ANGLE);
@@ -69,7 +70,7 @@ void avoid_obstacle(uint16_t distance){
 //	vect_diff_y = (-vect_left_y) + vect_right_y;
 //	beta = atan2f(vect_diff_x, vect_diff_y);
 
-	if(distance_right > 2 * distance){
+	if(distance_right > NO_OBSTACLE){
 
 		vect_diff_x = -vect_left_x;
 		vect_diff_y = (-vect_left_y) + distance;
@@ -81,11 +82,9 @@ void avoid_obstacle(uint16_t distance){
 		norm = vector_magnitude(vect_diff_x, vect_diff_y);
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
-
-		avoided = 1;
 	}
 
-	else if(distance_left > 2 * distance){
+	else if(distance_left > NO_OBSTACLE){
 
 		vect_diff_x = vect_right_x;
 		vect_diff_y = (-distance) + vect_right_y;
@@ -98,10 +97,9 @@ void avoid_obstacle(uint16_t distance){
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 
-		avoided = 1;
 	}
 
-	else if(distance_left <= distance_right && avoided == 0){
+	else if(distance_left <= distance_right){
 
 		vect_diff_x = (-vect_left_x) + vect_right_x;
 		vect_diff_y = (-vect_left_y) + vect_right_y;
@@ -115,7 +113,7 @@ void avoid_obstacle(uint16_t distance){
 		go_straight(straight_time);
 	}
 
-	else if(distance_left > distance_right && avoided == 0){
+	else if(distance_left > distance_right){
 
 		vect_diff_x = (-vect_left_x) + vect_right_x;
 		vect_diff_y = (-vect_left_y) + vect_right_y;
@@ -128,8 +126,6 @@ void avoid_obstacle(uint16_t distance){
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 	}
-
-	avoided = 0;
 }
 
 
@@ -139,8 +135,8 @@ void turn_right(uint16_t turn_time){
 	time_start = chVTGetSystemTime();
 
 	while(chVTGetSystemTime()-time_start < turn_time){
-		left_motor_set_speed(SCAN_SPEED);
-		right_motor_set_speed(-SCAN_SPEED);
+		left_motor_set_speed(ROT_SPEED);
+		right_motor_set_speed(-ROT_SPEED);
 	}
 	left_motor_set_speed(0);
 	right_motor_set_speed(0);
@@ -153,8 +149,8 @@ void turn_left(uint16_t turn_time){
 	time_start = chVTGetSystemTime();
 
 	while(chVTGetSystemTime()-time_start < turn_time){
-		left_motor_set_speed(-SCAN_SPEED);
-		right_motor_set_speed(SCAN_SPEED);
+		left_motor_set_speed(-ROT_SPEED);
+		right_motor_set_speed(ROT_SPEED);
 	}
 	left_motor_set_speed(0);
 	right_motor_set_speed(0);
@@ -196,9 +192,9 @@ uint16_t convert_distance(int16_t distance){
 //computes the norm of a vector
 float vector_magnitude(float component_x, float component_y){
 
-	uint16_t magnitude;
+	float magnitude;
 
-	magnitude = sqrtf(component_x^2 + component_y^2);
+	magnitude = sqrtf(component_x*component_x + component_y*component_y);
 
 	return magnitude;
 }

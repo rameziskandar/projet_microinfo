@@ -27,6 +27,8 @@ static float micRight_output[FFT_SIZE];
 static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
+#define ROT_SPEED		500
+#define AVANCE_SPEED	600
 
 #define FREQ_FORWARD	16		//250Hz
 #define FREQ_LEFT		19		//296Hz
@@ -36,7 +38,8 @@ static float micBack_output[FFT_SIZE];
 #define PHASE_MIN		0.15 	//minimum threshold for phase difference values
 #define PHASE_MAX		1.2		//maximum threshold for phase difference values
 #define PHASE_STOP		0.11	//minimum threshold for phase difference values for stop
-#define DIST_STOP		70  	//distance between robot and obstacle in mm
+
+#define DIST_STOP		100  	//distance between robot and obstacle in mm
 
 
 
@@ -61,7 +64,6 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
 	//look for the magnitude of a given frequency
 	freq_norm_r = micRight_output[freq];
-	chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
 
 	//compute the phase for each mic
 	phase_right = atan2f(micRight_cmplx_input[2*freq+1],micRight_cmplx_input[2*freq]);
@@ -98,18 +100,18 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 			else if(phase_diff_fb < 0 && phase_diff_old_fb < 0 &&
 					phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN){
 
-				left_motor_set_speed(-500);
-				right_motor_set_speed(500);
+				left_motor_set_speed(-ROT_SPEED);
+				right_motor_set_speed(ROT_SPEED);
 				return i;
 			}
 			else if (distance < DIST_STOP){
-				avoid_obstacle();
+				avoid_obstacle(distance);
 				return i;
 			}
 
 			else{
-					left_motor_set_speed(600);
-					right_motor_set_speed(600);
+					left_motor_set_speed(AVANCE_SPEED);
+					right_motor_set_speed(AVANCE_SPEED);
 					return i;
 			}
 		}
@@ -118,8 +120,8 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 		else if (phase_diff_rl > PHASE_MIN && phase_diff_rl < PHASE_MAX &&
 			phase_diff_old_rl > PHASE_MIN && phase_diff_old_rl < PHASE_MAX ){
 
-				left_motor_set_speed(500);
-				right_motor_set_speed(-500);
+				left_motor_set_speed(ROT_SPEED);
+				right_motor_set_speed(-ROT_SPEED);
 				return i;
 
 		}
@@ -128,8 +130,8 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 		else if (phase_diff_rl < -PHASE_MIN && phase_diff_rl > -PHASE_MAX &&
 				 phase_diff_old_rl < -PHASE_MIN && phase_diff_old_rl > -PHASE_MAX){
 
-				left_motor_set_speed(-500);
-				right_motor_set_speed(500);
+				left_motor_set_speed(-ROT_SPEED);
+				right_motor_set_speed(ROT_SPEED);
 				return i;
 
 		}
@@ -235,7 +237,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		else if (index == 40){
 			index=0;
 		}
-//		chprintf((BaseSequentialStream *)&SD3, "index = %d\n", index);
 	}
 }
 
