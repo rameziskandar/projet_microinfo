@@ -33,15 +33,18 @@
 
 void avoid_obstacle(uint16_t distance){
 
+	struct vector {
+		float x;
+		float y;
+	};
+
+	static struct vector vect_left;
+	static struct vector vect_right;
+	static struct vector vect_diff;
+
 	static uint16_t distance_left;
 	static uint16_t distance_right;
 
-	static float vect_left_x;
-	static float vect_left_y;
-	static float vect_right_x;
-	static float vect_right_y;
-	static float vect_diff_x;
-	static float vect_diff_y;
 	static float beta;
 	static uint16_t avoid_time;
 	static float straight_time;
@@ -52,48 +55,41 @@ void avoid_obstacle(uint16_t distance){
 	distance_left = VL53L0X_get_dist_mm();
 
 	//vecteur du scan a gauche
-	vect_left_x = -(distance_left * sin(SCAN_ANGLE));
-	vect_left_y = distance_left * cos(SCAN_ANGLE);
+	vect_left.x = -(distance_left * sin(SCAN_ANGLE));
+	vect_left.y = distance_left * cos(SCAN_ANGLE);
 
 	turn_right(TIME_RIGHT);
 	distance_right = VL53L0X_get_dist_mm();
 
-    	chprintf((BaseSequentialStream *)&SD3, "dist_left = %d\n dist_right = %d\n", distance_left, distance_right);
-
 	//vecteur du scan a droite
-	vect_right_x = distance_right * sin(SCAN_ANGLE);
-	vect_right_y = distance_right * cos(SCAN_ANGLE);
+	vect_right.x = distance_right * sin(SCAN_ANGLE);
+	vect_right.y = distance_right * cos(SCAN_ANGLE);
 
-	//on soustrait le vect_left a vect_right pour ensuite pouvoir calculer
-	//la direction "parallèle" a l'obstacle
-//	vect_diff_x = (-vect_left_x) + vect_right_x;
-//	vect_diff_y = (-vect_left_y) + vect_right_y;
-//	beta = atan2f(vect_diff_x, vect_diff_y);
 
 	if(distance_right > NO_OBSTACLE){
 
-		vect_diff_x = -vect_left_x;
-		vect_diff_y = (-vect_left_y) + distance;
-		beta = atan2f(vect_diff_x, vect_diff_y);
+		vect_diff.x = -vect_left.x;
+		vect_diff.y = (-vect_left.y) + distance;
+		beta = atan2f(vect_diff.x, vect_diff.y);
 
 		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff_x, vect_diff_y);
+		norm = vector_magnitude(vect_diff.x, vect_diff.y);
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 	}
 
 	else if(distance_left > NO_OBSTACLE){
 
-		vect_diff_x = vect_right_x;
-		vect_diff_y = (-distance) + vect_right_y;
-		beta = atan2f(vect_diff_x, vect_diff_y);
+		vect_diff.x = vect_right.x;
+		vect_diff.y = (-distance) + vect_right.y;
+		beta = atan2f(vect_diff.x, vect_diff.y);
 
 		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff_x, vect_diff_y);
+		norm = vector_magnitude(vect_diff.x, vect_diff.y);
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 
@@ -101,28 +97,28 @@ void avoid_obstacle(uint16_t distance){
 
 	else if(distance_left <= distance_right){
 
-		vect_diff_x = (-vect_left_x) + vect_right_x;
-		vect_diff_y = (-vect_left_y) + vect_right_y;
-		beta = atan2f(vect_diff_x, vect_diff_y);
+		vect_diff.x = (-vect_left.x) + vect_right.x;
+		vect_diff.y = (-vect_left.y) + vect_right.y;
+		beta = atan2f(vect_diff.x, vect_diff.y);
 
 		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff_x, vect_diff_y);
+		norm = vector_magnitude(vect_diff.x, vect_diff.y);
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 	}
 
 	else if(distance_left > distance_right){
 
-		vect_diff_x = (-vect_left_x) + vect_right_x;
-		vect_diff_y = (-vect_left_y) + vect_right_y;
-		beta = atan2f(vect_diff_x, vect_diff_y);
+		vect_diff.x = (-vect_left.x) + vect_right.x;
+		vect_diff.y = (-vect_left.y) + vect_right.y;
+		beta = atan2f(vect_diff.x, vect_diff.y);
 
 		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
 		turn_left(avoid_time);
 
-		norm = vector_magnitude(vect_diff_x, vect_diff_y);
+		norm = vector_magnitude(vect_diff.x, vect_diff.y);
 		straight_time = convert_distance(AVOID_MARGIN * norm);
 		go_straight(straight_time);
 	}

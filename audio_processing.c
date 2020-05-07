@@ -13,7 +13,7 @@
 #include <arm_math.h>
 #include <sensors/VL53L0X/VL53L0X.h>
 
-//semaphore
+////semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
 //2 times FFT_SIZE because these arrays contain complex numbers (real + imaginary)
@@ -30,10 +30,13 @@ static float micBack_output[FFT_SIZE];
 #define ROT_SPEED		500
 #define AVANCE_SPEED	600
 
-#define FREQ_FORWARD	16		//250Hz
-#define FREQ_LEFT		19		//296Hz
-#define FREQ_RIGHT		23		//359HZ
-#define FREQ_BACKWARD	26		//406Hz
+#define FREQ_TARGET_1	16		//250Hz
+#define FREQ_TARGET_2	19		//296Hz
+#define FREQ_TARGET_3	23		//359HZ
+
+#define INDEX_FREQ_1	15
+#define INDEX_FREQ_2	30
+#define INDEX_FREQ_3	45
 
 #define PHASE_MIN		0.15 	//minimum threshold for phase difference values
 #define PHASE_MAX		1.2		//maximum threshold for phase difference values
@@ -96,7 +99,6 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				return i+1;
 			}
 
-
 			else if(phase_diff_fb < 0 && phase_diff_old_fb < 0 &&
 					phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN){
 
@@ -104,6 +106,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				right_motor_set_speed(ROT_SPEED);
 				return i;
 			}
+
 			else if (distance < DIST_STOP){
 				avoid_obstacle(distance);
 				return i;
@@ -133,10 +136,9 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				left_motor_set_speed(-ROT_SPEED);
 				right_motor_set_speed(ROT_SPEED);
 				return i;
-
 		}
-
 	}
+
 	else{
 			left_motor_set_speed(0);
 			right_motor_set_speed(0);
@@ -228,13 +230,16 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		nb_samples = 0;
 		mustSend++;
 
-		if (index < 20){
-			index = sound_position_detection(index, FREQ_LEFT);
+		if (index < INDEX_FREQ_1){
+			index = sound_position_detection(index, FREQ_TARGET_1);
 		}
-		else if (index < 40){
-			index = sound_position_detection(index, FREQ_RIGHT);
+		else if (index < INDEX_FREQ_2){
+			index = sound_position_detection(index, FREQ_TARGET_2);
 		}
-		else if (index == 40){
+		else if (index < INDEX_FREQ_3){
+			index = sound_position_detection(index, FREQ_TARGET_3);
+		}
+		else if (index >= INDEX_FREQ_3){
 			index=0;
 		}
 	}
