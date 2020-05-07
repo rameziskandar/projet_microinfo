@@ -21,6 +21,7 @@
 #define ROT_SPEED		500
 #define AVANCE_SPEED	600
 #define SCAN_ANGLE		PI/9	//angle in rad
+#define ANGLE_90DEG		PI/2
 #define TIME_LEFT		240		//time to go SCAN_ANGLE to the left
 #define TIME_RIGHT		480		//time to go SCAN_ANGLE to the right
 #define SPEED_FORWARD	77.28	//[mm/s] for ROT_SPEED = 600 [steps/s]
@@ -48,7 +49,6 @@ void avoid_obstacle(uint16_t distance){
 	static float beta;
 	static uint16_t avoid_time;
 	static float straight_time;
-	static float norm;
 
 
 	turn_left(TIME_LEFT);
@@ -75,8 +75,7 @@ void avoid_obstacle(uint16_t distance){
 		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff.x, vect_diff.y);
-		straight_time = convert_distance(AVOID_MARGIN * norm);
+		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_left);
 		go_straight(straight_time);
 	}
 
@@ -89,8 +88,7 @@ void avoid_obstacle(uint16_t distance){
 		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff.x, vect_diff.y);
-		straight_time = convert_distance(AVOID_MARGIN * norm);
+		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_right);
 		go_straight(straight_time);
 
 	}
@@ -104,8 +102,7 @@ void avoid_obstacle(uint16_t distance){
 		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
-		norm = vector_magnitude(vect_diff.x, vect_diff.y);
-		straight_time = convert_distance(AVOID_MARGIN * norm);
+		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_left);
 		go_straight(straight_time);
 	}
 
@@ -118,8 +115,7 @@ void avoid_obstacle(uint16_t distance){
 		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
 		turn_left(avoid_time);
 
-		norm = vector_magnitude(vect_diff.x, vect_diff.y);
-		straight_time = convert_distance(AVOID_MARGIN * norm);
+		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_right);
 		go_straight(straight_time);
 	}
 }
@@ -186,11 +182,21 @@ uint16_t convert_distance(int16_t distance){
 }
 
 //computes the norm of a vector
-float vector_magnitude(float component_x, float component_y){
+uint16_t straight_avoid(float component_x, float component_y, float angle, uint16_t distance){
 
 	float magnitude;
+	float gamma;
+	uint16_t perp_dist;
+	uint16_t dist_to_go;
+	uint16_t time_to_go;
+
+	gamma = ANGLE_90DEG - (angle + SCAN_ANGLE);
+	perp_dist = distance * sin(gamma);
 
 	magnitude = sqrtf(component_x*component_x + component_y*component_y);
 
-	return magnitude;
+	dist_to_go = AVOID_MARGIN * magnitude + perp_dist;
+	time_to_go = convert_distance(dist_to_go);
+
+	return time_to_go;
 }

@@ -12,4 +12,4 @@ uint16_t convert_angle(float angle);
 
 uint16_t convert_distance(int16_t distance);
 
-float vector_magnitude(float component_x, float component_y);
+uint16_t straight_avoid(float component_x, float component_y, float angle, uint16_t distance);
