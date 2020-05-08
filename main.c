@@ -59,15 +59,9 @@ int main(void)
     {
        //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
 
-//    	distance = VL53L0X_get_dist_mm();
 ////    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
 //
-//    	if (distance < 70){
-//    		avoid_obstacle();
-//    	}
 
-
-//    	wait send to computer
     	chThdSleepMilliseconds(1000);
     }
 }

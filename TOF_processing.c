@@ -26,7 +26,7 @@
 #define TIME_RIGHT		480		//time to go SCAN_ANGLE to the right
 #define SPEED_FORWARD	77.28	//[mm/s] for ROT_SPEED = 600 [steps/s]
 #define TURN_SPEED		2.43	//[rad/s] for ROT_SPEED = 500 [steps/s]
-#define AVOID_MARGIN	2.5
+#define AVOID_MARGIN	2
 
 #define NO_OBSTACLE		500  	//minimum threshold for when there is no obstacle scanned
 
@@ -70,9 +70,9 @@ void avoid_obstacle(uint16_t distance){
 
 		vect_diff.x = -vect_left.x;
 		vect_diff.y = (-vect_left.y) + distance;
-		beta = atan2f(vect_diff.x, vect_diff.y);
+		beta = atan2f(vect_diff.y, vect_diff.x);
 
-		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
+		avoid_time = convert_angle(ANGLE_90DEG - fabs(beta) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
 		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_left);
@@ -83,10 +83,10 @@ void avoid_obstacle(uint16_t distance){
 
 		vect_diff.x = vect_right.x;
 		vect_diff.y = (-distance) + vect_right.y;
-		beta = atan2f(vect_diff.x, vect_diff.y);
+		beta = atan2f(vect_diff.y, vect_diff.x);
 
-		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
-		turn_right(avoid_time);
+		avoid_time = convert_angle(ANGLE_90DEG - (fabs(beta)) + SCAN_ANGLE);
+		turn_left(avoid_time);
 
 		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_right);
 		go_straight(straight_time);
@@ -94,12 +94,12 @@ void avoid_obstacle(uint16_t distance){
 	}
 
 	else if(distance_left <= distance_right){
-
+//	else if(phase_diff >= 0){
 		vect_diff.x = (-vect_left.x) + vect_right.x;
 		vect_diff.y = (-vect_left.y) + vect_right.y;
-		beta = atan2f(vect_diff.x, vect_diff.y);
+		beta = atan2f(vect_diff.y, vect_diff.x);
 
-		avoid_time = convert_angle(fabs(beta) - SCAN_ANGLE);
+		avoid_time = convert_angle(ANGLE_90DEG - (fabs(beta)) - SCAN_ANGLE);
 		turn_right(avoid_time);
 
 		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_left);
@@ -107,12 +107,13 @@ void avoid_obstacle(uint16_t distance){
 	}
 
 	else if(distance_left > distance_right){
+//	else if(phase_diff < 0){
 
 		vect_diff.x = (-vect_left.x) + vect_right.x;
 		vect_diff.y = (-vect_left.y) + vect_right.y;
-		beta = atan2f(vect_diff.x, vect_diff.y);
+		beta = atan2f(vect_diff.y, vect_diff.x);
 
-		avoid_time = convert_angle(PI-(fabs(beta)) + SCAN_ANGLE);
+		avoid_time = convert_angle(ANGLE_90DEG - (fabs(beta)) + SCAN_ANGLE);
 		turn_left(avoid_time);
 
 		straight_time = straight_avoid(vect_diff.x, vect_diff.y, beta, distance_right);
@@ -154,11 +155,14 @@ void go_straight(uint16_t time_forward){
 	time_start = chVTGetSystemTime();
 
 	while(chVTGetSystemTime()-time_start < time_forward){
+		if (VL53L0X_get_dist_mm() <= 100){
+			break;
+		}
 		left_motor_set_speed(AVANCE_SPEED);
 		right_motor_set_speed(AVANCE_SPEED);
 	}
-	left_motor_set_speed(0);
-	right_motor_set_speed(0);
+//	left_motor_set_speed(0);
+//	right_motor_set_speed(0);
 }
 
 //converts an angle into a time the robot needs to turn to obtain that angle
@@ -190,11 +194,12 @@ uint16_t straight_avoid(float component_x, float component_y, float angle, uint1
 	uint16_t dist_to_go;
 	uint16_t time_to_go;
 
-	gamma = ANGLE_90DEG - (angle + SCAN_ANGLE);
+	gamma = angle - SCAN_ANGLE;
 	perp_dist = distance * sin(gamma);
 
 	magnitude = sqrtf(component_x*component_x + component_y*component_y);
-
+	chprintf((BaseSequentialStream *)&SD3, "perp_dist = %d\n", perp_dist);
+	chprintf((BaseSequentialStream *)&SD3, "magnitude = %f\n", magnitude);
 	dist_to_go = AVOID_MARGIN * magnitude + perp_dist;
 	time_to_go = convert_distance(dist_to_go);
 

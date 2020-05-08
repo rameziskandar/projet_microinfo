@@ -30,13 +30,16 @@ static float micBack_output[FFT_SIZE];
 #define ROT_SPEED		500
 #define AVANCE_SPEED	600
 
-#define FREQ_TARGET_1	16		//250Hz
-#define FREQ_TARGET_2	19		//296Hz
-#define FREQ_TARGET_3	23		//359HZ
+#define SOUND_THRESHOLD	14000	//minimum sound magnitude for detection
+#define SOUND_STOP		60000	//sound magnitude when robot is underneath the source
 
-#define INDEX_FREQ_1	15
-#define INDEX_FREQ_2	30
-#define INDEX_FREQ_3	45
+#define FREQ_TARGET_1	16		//250Hz
+#define FREQ_TARGET_2	23		//359Hz
+#define FREQ_TARGET_3	29		//453HZ
+
+#define INDEX_FREQ_1	12
+#define INDEX_FREQ_2	24
+#define INDEX_FREQ_3	36
 
 #define PHASE_MIN		0.15 	//minimum threshold for phase difference values
 #define PHASE_MAX		1.2		//maximum threshold for phase difference values
@@ -75,8 +78,9 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 	phase_front = atan2f(micFront_cmplx_input[2*freq+1],micFront_cmplx_input[2*freq]);
 
 
-	if(freq_norm_r > 15000){
-
+	if(freq_norm_r > SOUND_THRESHOLD){
+//		chprintf((BaseSequentialStream *)&SD3, "freq = %d\n", freq);
+//		chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
 		phase_diff_old_rl = phase_diff_rl;
 		phase_diff_rl = phase_right-phase_left;
 
@@ -92,7 +96,8 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 			if(phase_diff_fb < PHASE_STOP && phase_diff_fb > -PHASE_STOP &&
 				phase_diff_old_fb < PHASE_STOP && phase_diff_old_fb > -PHASE_STOP &&
 				phase_diff_rl < PHASE_STOP && phase_diff_rl > -PHASE_STOP &&
-				phase_diff_old_rl < PHASE_STOP && phase_diff_old_rl > -PHASE_STOP){
+				phase_diff_old_rl < PHASE_STOP && phase_diff_old_rl > -PHASE_STOP &&
+				freq_norm_r > SOUND_STOP){
 
 				left_motor_set_speed(0);
 				right_motor_set_speed(0);
@@ -171,7 +176,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 
 	static uint16_t nb_samples = 0;
 	static uint8_t mustSend = 0;
-	static uint8_t index = 0;
+	static uint8_t index_freq = 0;
 
 	//loop to fill the buffers
 	for(uint16_t i = 0 ; i < num_samples ; i+=4){
@@ -230,17 +235,19 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		nb_samples = 0;
 		mustSend++;
 
-		if (index < INDEX_FREQ_1){
-			index = sound_position_detection(index, FREQ_TARGET_1);
+//		chprintf((BaseSequentialStream *)&SD3, "index = %d\n", index_freq);
+
+		if (index_freq < INDEX_FREQ_1){
+			index_freq = sound_position_detection(index_freq, FREQ_TARGET_1);
 		}
-		else if (index < INDEX_FREQ_2){
-			index = sound_position_detection(index, FREQ_TARGET_2);
+		else if (index_freq < INDEX_FREQ_2){
+			index_freq = sound_position_detection(index_freq, FREQ_TARGET_2);
 		}
-		else if (index < INDEX_FREQ_3){
-			index = sound_position_detection(index, FREQ_TARGET_3);
+		else if (index_freq < INDEX_FREQ_3){
+			index_freq = sound_position_detection(index_freq, FREQ_TARGET_3);
 		}
-		else if (index >= INDEX_FREQ_3){
-			index=0;
+		else if (index_freq >= INDEX_FREQ_3){
+			index_freq=0;
 		}
 	}
 }
