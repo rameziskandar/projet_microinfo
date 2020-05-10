@@ -30,7 +30,7 @@ static float micBack_output[FFT_SIZE];
 #define ROT_SPEED		500
 #define AVANCE_SPEED	600
 
-#define SOUND_THRESHOLD	14000	//minimum sound magnitude for detection
+#define SOUND_THRESHOLD	12000	//minimum sound magnitude for detection
 #define SOUND_STOP		60000	//sound magnitude when robot is underneath the source
 
 #define FREQ_TARGET_1	16		//250Hz
@@ -55,7 +55,7 @@ static float micBack_output[FFT_SIZE];
 */
 uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
-	static float freq_norm_r;
+	static float freq_norm_f;
 	static float phase_right;
 	static float phase_left;
 	static float phase_back;
@@ -69,7 +69,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 	distance = VL53L0X_get_dist_mm();
 
 	//look for the magnitude of a given frequency
-	freq_norm_r = micRight_output[freq];
+	freq_norm_f = micFront_output[freq];
 
 	//compute the phase for each mic
 	phase_right = atan2f(micRight_cmplx_input[2*freq+1],micRight_cmplx_input[2*freq]);
@@ -78,7 +78,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 	phase_front = atan2f(micFront_cmplx_input[2*freq+1],micFront_cmplx_input[2*freq]);
 
 
-	if(freq_norm_r > SOUND_THRESHOLD){
+	if(freq_norm_f > SOUND_THRESHOLD){
 //		chprintf((BaseSequentialStream *)&SD3, "freq = %d\n", freq);
 //		chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
 		phase_diff_old_rl = phase_diff_rl;
@@ -97,7 +97,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 				phase_diff_old_fb < PHASE_STOP && phase_diff_old_fb > -PHASE_STOP &&
 				phase_diff_rl < PHASE_STOP && phase_diff_rl > -PHASE_STOP &&
 				phase_diff_old_rl < PHASE_STOP && phase_diff_old_rl > -PHASE_STOP &&
-				freq_norm_r > SOUND_STOP){
+				freq_norm_f > SOUND_STOP){
 
 				left_motor_set_speed(0);
 				right_motor_set_speed(0);
@@ -234,8 +234,6 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		}
 		nb_samples = 0;
 		mustSend++;
-
-//		chprintf((BaseSequentialStream *)&SD3, "index = %d\n", index_freq);
 
 		if (index_freq < INDEX_FREQ_1){
 			index_freq = sound_position_detection(index_freq, FREQ_TARGET_1);
