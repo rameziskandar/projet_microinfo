@@ -21,6 +21,7 @@
 #define TURN_SPEED		2.43	//[rad/s] for ROT_SPEED = 500 [steps/s]
 #define AVOID_MARGIN	2
 
+#define DIST_MAX		300
 #define NO_OBSTACLE		500  	//minimum threshold for when there is no obstacle scanned
 
 
@@ -124,8 +125,6 @@ void turn_right(uint16_t turn_time){
 		left_motor_set_speed(ROT_SPEED);
 		right_motor_set_speed(-ROT_SPEED);
 	}
-	left_motor_set_speed(0);
-	right_motor_set_speed(0);
 }
 
 
@@ -138,8 +137,6 @@ void turn_left(uint16_t turn_time){
 		left_motor_set_speed(-ROT_SPEED);
 		right_motor_set_speed(ROT_SPEED);
 	}
-	left_motor_set_speed(0);
-	right_motor_set_speed(0);
 }
 
 void go_straight(uint16_t time_forward){
@@ -154,8 +151,6 @@ void go_straight(uint16_t time_forward){
 		left_motor_set_speed(AVANCE_SPEED);
 		right_motor_set_speed(AVANCE_SPEED);
 	}
-//	left_motor_set_speed(0);
-//	right_motor_set_speed(0);
 }
 
 //converts an angle into a time the robot needs to turn to obtain that angle
@@ -178,7 +173,6 @@ uint16_t convert_distance(int16_t distance){
 	return time_forward;
 }
 
-//computes the time the robot needs to go straight to avoid the obstacle
 uint16_t straight_avoid(float component_x, float component_y, float angle, uint16_t distance){
 
 	float magnitude;
@@ -191,8 +185,11 @@ uint16_t straight_avoid(float component_x, float component_y, float angle, uint1
 	perp_dist = distance * sin(gamma);
 
 	magnitude = sqrtf(component_x*component_x + component_y*component_y);
-
 	dist_to_go = AVOID_MARGIN * magnitude + perp_dist;
+	if (dist_to_go > DIST_MAX){
+		dist_to_go = DIST_MAX;
+	}
+	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", dist_to_go);
 	time_to_go = convert_distance(dist_to_go);
 
 	return time_to_go;
