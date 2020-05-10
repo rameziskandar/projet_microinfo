@@ -13,7 +13,8 @@
 #include <chprintf.h>
 
 #include <motors.h>
-#include <communications.h>
+#include <leds.h>
+#include <communication.h>
 #include <arm_math.h>
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <TOF_processing.h>
@@ -95,7 +96,7 @@ void avoid_obstacle(uint16_t distance){
 	}
 
 	else if(distance_left <= distance_right){
-//	else if(phase_diff >= 0){
+
 		vect_diff.x = (-vect_left.x) + vect_right.x;
 		vect_diff.y = (-vect_left.y) + vect_right.y;
 		beta = atan2f(vect_diff.y, vect_diff.x);
@@ -108,7 +109,6 @@ void avoid_obstacle(uint16_t distance){
 	}
 
 	else if(distance_left > distance_right){
-//	else if(phase_diff < 0){
 
 		vect_diff.x = (-vect_left.x) + vect_right.x;
 		vect_diff.y = (-vect_left.y) + vect_right.y;
@@ -127,11 +127,14 @@ void turn_right(uint16_t turn_time){
 
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
+	set_led(LED3, 1);
 
 	while(chVTGetSystemTime()-time_start < turn_time){
+
 		left_motor_set_speed(ROT_SPEED);
 		right_motor_set_speed(-ROT_SPEED);
 	}
+	set_led(LED3, 0);
 }
 
 
@@ -139,25 +142,31 @@ void turn_left(uint16_t turn_time){
 
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
+	set_led(LED7, 1);
 
 	while(chVTGetSystemTime()-time_start < turn_time){
+
 		left_motor_set_speed(-ROT_SPEED);
 		right_motor_set_speed(ROT_SPEED);
 	}
+	set_led(LED7, 0);
 }
 
 void go_straight(uint16_t time_forward){
 
 	static systime_t time_start;
 	time_start = chVTGetSystemTime();
+	set_led(LED1, 1);
 
 	while(chVTGetSystemTime()-time_start < time_forward){
 		if (VL53L0X_get_dist_mm() <= 100){
 			break;
 		}
+
 		left_motor_set_speed(AVANCE_SPEED);
 		right_motor_set_speed(AVANCE_SPEED);
 	}
+	set_led(LED1, 0);
 }
 
 //converts an angle into a time the robot needs to turn to obtain that angle
@@ -197,7 +206,7 @@ uint16_t straight_avoid(float component_x, float component_y, float angle, uint1
 	if (dist_to_go > DIST_MAX){
 		dist_to_go = DIST_MAX;
 	}
-	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", dist_to_go);
+
 	time_to_go = convert_distance(dist_to_go);
 
 	return time_to_go;

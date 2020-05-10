@@ -5,6 +5,7 @@
 #include <chprintf.h>
 
 #include <motors.h>
+#include <leds.h>
 #include <audio/microphone.h>
 #include <audio_processing.h>
 #include <communications.h>
@@ -68,6 +69,8 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 
 	distance = VL53L0X_get_dist_mm();
 
+	clear_leds();
+
 	//look for the magnitude of a given frequency
 	freq_norm_f = micFront_output[freq];
 
@@ -78,27 +81,29 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 	phase_front = atan2f(micFront_cmplx_input[2*freq+1],micFront_cmplx_input[2*freq]);
 
 
-	if(freq_norm_f > SOUND_THRESHOLD){
-//		chprintf((BaseSequentialStream *)&SD3, "freq = %d\n", freq);
-//		chprintf((BaseSequentialStream *)&SD3, "norm = %f\n", freq_norm_r);
+	if (freq_norm_f > SOUND_THRESHOLD){
+
+		set_body_led(0);
+
 		phase_diff_old_rl = phase_diff_rl;
 		phase_diff_rl = phase_right-phase_left;
 
 		//look if the phase difference between the right and left mic is almost equal to zero. We take 2 consecutive values
 		//to be sure that we are not taking in consideration the errors from the mic
-		if(phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN &&
+		if (phase_diff_rl < PHASE_MIN && phase_diff_rl > -PHASE_MIN &&
 			phase_diff_old_rl < PHASE_MIN && phase_diff_old_rl > -PHASE_MIN){
 
 			phase_diff_old_fb = phase_diff_fb;
 			phase_diff_fb = phase_front - phase_back;
 
 			//detecting if the robot is underneath the sound source
-			if(phase_diff_fb < PHASE_STOP && phase_diff_fb > -PHASE_STOP &&
+			if (phase_diff_fb < PHASE_STOP && phase_diff_fb > -PHASE_STOP &&
 				phase_diff_old_fb < PHASE_STOP && phase_diff_old_fb > -PHASE_STOP &&
 				phase_diff_rl < PHASE_STOP && phase_diff_rl > -PHASE_STOP &&
 				phase_diff_old_rl < PHASE_STOP && phase_diff_old_rl > -PHASE_STOP &&
 				freq_norm_f > SOUND_STOP){
 
+				set_body_led(1);
 				left_motor_set_speed(0);
 				right_motor_set_speed(0);
 				return i+1;
@@ -113,13 +118,16 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 			}
 
 			else if (distance < DIST_STOP){
+
 				avoid_obstacle(distance);
 				return i;
 			}
 
 			else{
+					set_led(LED1, 1);
 					left_motor_set_speed(AVANCE_SPEED);
 					right_motor_set_speed(AVANCE_SPEED);
+
 					return i;
 			}
 		}
@@ -128,6 +136,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 		else if (phase_diff_rl > PHASE_MIN && phase_diff_rl < PHASE_MAX &&
 			phase_diff_old_rl > PHASE_MIN && phase_diff_old_rl < PHASE_MAX ){
 
+				set_led(LED3, 1);
 				left_motor_set_speed(ROT_SPEED);
 				right_motor_set_speed(-ROT_SPEED);
 				return i;
@@ -138,6 +147,7 @@ uint16_t sound_position_detection(uint8_t i, uint16_t freq){
 		else if (phase_diff_rl < -PHASE_MIN && phase_diff_rl > -PHASE_MAX &&
 				 phase_diff_old_rl < -PHASE_MIN && phase_diff_old_rl > -PHASE_MAX){
 
+				set_led(LED7, 1);
 				left_motor_set_speed(-ROT_SPEED);
 				right_motor_set_speed(ROT_SPEED);
 				return i;

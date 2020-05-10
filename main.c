@@ -11,6 +11,7 @@
 #include <motors.h>
 #include <audio/microphone.h>
 #include <sensors/VL53L0X/VL53L0X.h>
+#include <leds.h>
 
 #include <audio_processing.h>
 #include <TOF_processing.h>
@@ -43,7 +44,10 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
-
+    //inits the LEDs
+    clear_leds();
+    set_body_led(0);
+    set_front_led(0);
     //starts the serial communication
     serial_start();
     //starts the USB communication
@@ -57,11 +61,6 @@ int main(void)
 
     while (1)
     {
-       //	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance_mm);
-
-////    	chprintf((BaseSequentialStream *)&SD3, "dist = %d\n", distance);
-//
-
     	chThdSleepMilliseconds(1000);
     }
 }
